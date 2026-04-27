@@ -13,11 +13,11 @@ public class DialoguePlusAdapter : MonoBehaviour
     private static DialoguePlusAdapter _instance;
     public static DialoguePlusAdapter Instance => _instance;
 
-    private Executer _executer = new();
+    private Executor _executor = new();
     private Compiler _compiler = new();
 
-    public Executer Executer => _executer;
-    public Runtime Runtime => _executer.Runtime;
+    public Executor Executor => _executor;
+    public Runtime Runtime => _executor.Runtime;
 
     void Awake()
     {
@@ -54,9 +54,9 @@ public class DialoguePlusAdapter : MonoBehaviour
         if (result.Success)
         {
             this.Runtime.Variables.Clear();
-            _executer.Prepare(result.Labels);
+            _executor.Prepare(result.Labels);
             Debug.Log($"[D+] Script execution start, include labels: {string.Join(", ", result.Labels.Labels.Keys)}");
-            await _executer.AutoStepAsync(0);
+            await _executor.AutoStepAsync(0);
         }
     }
 }
