@@ -1,0 +1,28 @@
+{
+  "name": "com.dialogueplus.core",
+  "version": "1.0.0",
+  "displayName": "DialoguePlus",
+  "description": "Unity adapter for DialoguePlus Core",
+  "unity": "2022.3",
+  "unityRelease": "0f1",
+  "documentationUrl": "https://github.com/curefate/DialoguePlus-Unity#readme",
+  "licenseUrl": "https://github.com/curefate/DialoguePlus-Unity/blob/main/LICENSE",
+  "keywords": [
+    "dialogue",
+    "narrative"
+  ],
+  "author": {
+    "name": "curefate",
+    "url": "https://github.com/curefate"
+  },
+  "dependencies": {
+    "com.unity.textmeshpro": "3.0.6"
+  },
+  "samples": [
+    {
+      "displayName": "DialoguePlus Sample Scene",
+      "description": "A sample scene showcasing visual novel like gameplay.",
+      "path": "Samples~/DemoScene"
+    }
+  ]
+}
