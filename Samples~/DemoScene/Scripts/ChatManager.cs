@@ -187,8 +187,8 @@ public class ChatManager : MonoBehaviour
     void Start()
     {
         HideUI();
-        DialoguePlusAdapter.Instance.Executer.OnDialogueAsync = HandleDialogue;
-        DialoguePlusAdapter.Instance.Executer.OnMenuAsync = HandleMenu;
+        DialoguePlusAdapter.Instance.Executor.OnDialogueAsync = HandleDialogue;
+        DialoguePlusAdapter.Instance.Executor.OnMenuAsync = HandleMenu;
         DialoguePlusAdapter.Instance.Runtime.Functions.AddFunction(HideUI);
         DialoguePlusAdapter.Instance.Runtime.Functions.AddFunction(ShowUI);
         DialoguePlusAdapter.Instance.Runtime.Functions.AddFunction<string, string>(ShowTalker);
