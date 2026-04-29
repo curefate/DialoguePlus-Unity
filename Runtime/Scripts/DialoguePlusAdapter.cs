@@ -1,6 +1,9 @@
 using UnityEngine;
 using DialoguePlus.Core;
+using DialoguePlus.Unity;
 using System;
+using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
 
 public class DialoguePlusAdapter : MonoBehaviour
@@ -24,8 +27,10 @@ public class DialoguePlusAdapter : MonoBehaviour
         }
     }
 
+    private readonly ConcurrentDictionary<string, SourceContent> _cache = new(StringComparer.Ordinal);
+
     private Executor _executor = new();
-    private Compiler _compiler = new();
+    private Compiler _compiler = null!;
 
     public Executor Executor => _executor;
     public Runtime Runtime => _executor.Runtime;
@@ -40,6 +45,10 @@ public class DialoguePlusAdapter : MonoBehaviour
         }
 
         _instance = this;
+
+    // Build compiler with Unity resolver (cache + addressables + filesystem).
+    var resolver = DialoguePlusUnityResolverFactory.CreateRuntimeResolver(_cache);
+    _compiler = new Compiler(resolver);
     }
 
     private void OnDestroy()
@@ -50,11 +59,48 @@ public class DialoguePlusAdapter : MonoBehaviour
         }
     }
 
-    public async Task ExecuteToEnd(string path)
+    public Task<CompileResult> CompileAsync(string entrySourceId, CancellationToken ct = default)
     {
-        Debug.Log($"[D+] Compiling and executing script: {path}");
-        var result = _compiler.Compile(path);
-        Debug.Log($"[D+] Script compiled successfully: {path}");
+        if (string.IsNullOrWhiteSpace(entrySourceId))
+            throw new ArgumentException("entrySourceId cannot be null or empty.", nameof(entrySourceId));
+
+        var req = new CompileRequest
+        {
+            EntrySourceId = entrySourceId,
+            CancellationToken = ct,
+        };
+
+        return _compiler.CompileAsync(req);
+    }
+
+    public Task<CompileResult> CompileAsync(DialoguePlusScript entry, CancellationToken ct = default)
+    {
+        if (entry == null) throw new ArgumentNullException(nameof(entry));
+
+        var entrySourceId = !string.IsNullOrWhiteSpace(entry.SourceId)
+            ? entry.SourceId
+            : (!string.IsNullOrWhiteSpace(entry.Key)
+                ? DialoguePlusSourceId.SourceIdFromKey(entry.Key)
+                : throw new InvalidOperationException(
+                    "DialoguePlusScript is missing both SourceId and Key. Ensure it was imported correctly, or call CompileAsync(entrySourceId) instead."
+                ));
+
+        var req = new CompileRequest
+        {
+            EntrySourceId = entrySourceId,
+            EntryTextOverride = entry.Text,
+            CancellationToken = ct,
+        };
+
+        return _compiler.CompileAsync(req);
+    }
+
+    public async Task ExecuteToEnd(DialoguePlusScript entry, CancellationToken ct = default)
+    {
+        if (entry == null) throw new ArgumentNullException(nameof(entry));
+
+        var result = await CompileAsync(entry, ct);
+        Debug.Log($"[D+] Script compiled: {result.SourceID} (success={result.Success})");
         foreach (var diag in result.Diagnostics)
         {
             if (diag.Severity == Diagnostic.SeverityLevel.Error)
@@ -75,7 +121,36 @@ public class DialoguePlusAdapter : MonoBehaviour
             this.Runtime.Variables.Clear();
             _executor.Prepare(result.Labels);
             Debug.Log($"[D+] Script execution start, include labels: {string.Join(", ", result.Labels.Labels.Keys)}");
-            await _executor.AutoStepAsync(0);
+            await _executor.AutoStepAsync(0, ct);
+        }
+    }
+
+    public async Task ExecuteToEnd(string entrySourceId, CancellationToken ct = default)
+    {
+        Debug.Log($"[D+] Compiling and executing script: {entrySourceId}");
+        var result = await CompileAsync(entrySourceId, ct);
+        Debug.Log($"[D+] Script compiled: {entrySourceId} (success={result.Success})");
+        foreach (var diag in result.Diagnostics)
+        {
+            if (diag.Severity == Diagnostic.SeverityLevel.Error)
+            {
+                Debug.LogError($"[D+] {diag.Message} (Line {diag.Line}, Column {diag.Column})");
+            }
+            else if (diag.Severity == Diagnostic.SeverityLevel.Warning)
+            {
+                Debug.LogWarning($"[D+] {diag.Message} (Line {diag.Line}, Column {diag.Column})");
+            }
+            else
+            {
+                Debug.Log($"[D+] {diag.Message} (Line {diag.Line}, Column {diag.Column})");
+            }
+        }
+        if (result.Success)
+        {
+            this.Runtime.Variables.Clear();
+            _executor.Prepare(result.Labels);
+            Debug.Log($"[D+] Script execution start, include labels: {string.Join(", ", result.Labels.Labels.Keys)}");
+            await _executor.AutoStepAsync(0, ct);
         }
     }
 }
