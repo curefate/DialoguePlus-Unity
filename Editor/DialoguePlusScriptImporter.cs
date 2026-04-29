@@ -29,13 +29,11 @@ namespace DialoguePlus.Unity.Editor
                 if (!string.IsNullOrWhiteSpace(keyWarning))
                     ctx.LogImportWarning($"[DialoguePlus] {keyWarning}");
 
-                // Keep these empty so runtime callers don't accidentally rely on stale values.
-                script.Key = string.Empty;
+                // Keep this empty so runtime callers don't accidentally rely on stale values.
                 script.SourceId = string.Empty;
             }
             else
             {
-                script.Key = key;
                 script.SourceId = DialoguePlusAddressablesIds.SourceIdFromKey(key);
             }
 

@@ -12,11 +12,6 @@ namespace DialoguePlus.Unity
         public string Text = string.Empty;
 
         /// <summary>
-        /// Addressables key for this script (human friendly). Optional at runtime.
-        /// </summary>
-        public string Key = string.Empty;
-
-        /// <summary>
         /// Core-facing sourceId for this script (e.g. addr://dialogue/ch1/main.dp). Optional at runtime.
         /// </summary>
         public string SourceId = string.Empty;

@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using DialoguePlus.Core;
 
 namespace DialoguePlus.Unity
 {
@@ -82,6 +84,28 @@ namespace DialoguePlus.Unity
 			}
 
 			return string.Join("/", stack);
+		}
+	}
+
+	/// <summary>
+	/// Creates DialoguePlus Core resolvers suitable for Unity runtime.
+	/// Kept internal to minimize public surface and file count.
+	/// </summary>
+	internal static class DialoguePlusUnityResolverFactory
+	{
+		/// <summary>
+		/// Provider order: cache (override) -> addressables (addr://) -> file system.
+		/// </summary>
+		public static IScriptResolver CreateRuntimeResolver(
+			ConcurrentDictionary<string, SourceContent>? cache = null,
+			IImportResolver? importResolver = null)
+		{
+			var content = new ContentResolver()
+				.Register(new CacheContentProvider(cache))
+				.Register(new AddressablesContentProvider())
+				.Register(new FileContentProvider());
+
+			return new ScriptResolver(content, importResolver ?? new AddressablesImportResolver());
 		}
 	}
 }

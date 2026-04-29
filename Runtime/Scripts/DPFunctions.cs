@@ -7,6 +7,22 @@ using DialoguePlus.Core;
 using UnityEngine;
 using UnityEngine.Scripting;
 
+/// <summary>
+/// Mark a C# method as callable from DialoguePlus scripts.
+/// </summary>
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+public sealed class DPFunctionAttribute : Attribute
+{
+    public string Name { get; } = string.Empty;
+
+    public DPFunctionAttribute() { }
+
+    public DPFunctionAttribute(string name)
+    {
+        Name = name;
+    }
+}
+
 [Preserve]
 public static class FunctionRegistrar
 {
