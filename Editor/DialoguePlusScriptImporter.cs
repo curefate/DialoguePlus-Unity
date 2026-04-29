@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using DialoguePlus.Unity;
+using System.Text.RegularExpressions;
 using DialoguePlus.Core;
+using DialoguePlus.Unity;
 using UnityEditor;
 using UnityEditor.AssetImporters;
 using UnityEngine;
@@ -21,7 +23,7 @@ namespace DialoguePlus.Unity.Editor
             var script = ScriptableObject.CreateInstance<DialoguePlusScript>();
             script.Text = text;
 
-            var key = DialoguePlusKeyUtility.TryComputeKey(ctx.assetPath, root, out var keyWarning);
+            var key = TryComputeKey(ctx.assetPath, root, out var keyWarning);
             if (key == null)
             {
                 if (!string.IsNullOrWhiteSpace(keyWarning))
@@ -34,7 +36,7 @@ namespace DialoguePlus.Unity.Editor
             else
             {
                 script.Key = key;
-                script.SourceId = DialoguePlusSourceId.SourceIdFromKey(key);
+                script.SourceId = DialoguePlusAddressablesIds.SourceIdFromKey(key);
             }
 
 #if UNITY_EDITOR
@@ -55,7 +57,7 @@ namespace DialoguePlus.Unity.Editor
         private static void WarnMissingImports(AssetImportContext ctx, string entrySourceId, string text, string normalizedRoot)
         {
             var importResolver = new AddressablesImportResolver();
-            var importSpecs = DialoguePlusImportScanner.ScanImportSpecs(text);
+            var importSpecs = ScanImportSpecs(text);
 
             foreach (var spec in importSpecs)
             {
@@ -71,10 +73,10 @@ namespace DialoguePlus.Unity.Editor
                 }
 
                 // Only validate addr:// targets.
-                if (!DialoguePlusSourceId.IsAddressablesSourceId(targetSourceId))
+                if (!DialoguePlusAddressablesIds.IsAddressablesSourceId(targetSourceId))
                     continue;
 
-                var targetKey = DialoguePlusSourceId.KeyFromSourceId(targetSourceId);
+                var targetKey = DialoguePlusAddressablesIds.KeyFromSourceId(targetSourceId);
                 var targetAssetPath = (normalizedRoot + targetKey).Replace('\\', '/');
 
                 if (!File.Exists(targetAssetPath) && AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(targetAssetPath) == null)
@@ -84,6 +86,81 @@ namespace DialoguePlus.Unity.Editor
                     );
                 }
             }
+        }
+
+        private static string? TryComputeKey(string assetPath, string normalizedRootFolder, out string? warning)
+        {
+            warning = null;
+            if (string.IsNullOrWhiteSpace(assetPath))
+            {
+                warning = "assetPath is null/empty";
+                return null;
+            }
+
+            assetPath = assetPath.Replace('\\', '/');
+            if (!assetPath.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase))
+            {
+                warning = $"Asset path '{assetPath}' is not under Assets/.";
+                return null;
+            }
+
+            normalizedRootFolder = (normalizedRootFolder ?? "Assets/").Replace('\\', '/');
+            if (!normalizedRootFolder.EndsWith("/", StringComparison.Ordinal))
+                normalizedRootFolder += "/";
+
+            if (!assetPath.StartsWith(normalizedRootFolder, StringComparison.OrdinalIgnoreCase))
+            {
+                warning = $"'{assetPath}' is outside RootFolder '{normalizedRootFolder}'.";
+                return null;
+            }
+
+            var key = assetPath.Substring(normalizedRootFolder.Length);
+            key = DialoguePlusAddressablesIds.Normalize(key);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                warning = $"Computed empty key for '{assetPath}' with RootFolder '{normalizedRootFolder}'.";
+                return null;
+            }
+
+            return key;
+        }
+
+        // Matches: import "..."  OR  import '...'  OR  import ...
+        private static readonly Regex ImportLine = new Regex(
+            "^\\s*import\\s+(?<spec>.+?)\\s*$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant
+        );
+
+        private static List<string> ScanImportSpecs(string text)
+        {
+            var result = new List<string>();
+            if (string.IsNullOrEmpty(text)) return result;
+
+            var lines = text.Split('\n');
+            foreach (var raw in lines)
+            {
+                var line = raw.TrimEnd('\r');
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                var trimmedStart = line.TrimStart();
+                if (trimmedStart.StartsWith("#")) continue;
+
+                var m = ImportLine.Match(line);
+                if (!m.Success) continue;
+
+                var spec = m.Groups["spec"].Value.Trim();
+
+                if ((spec.StartsWith("\"") && spec.EndsWith("\"")) || (spec.StartsWith("'") && spec.EndsWith("'")))
+                {
+                    if (spec.Length >= 2)
+                        spec = spec.Substring(1, spec.Length - 2);
+                }
+
+                if (!string.IsNullOrWhiteSpace(spec))
+                    result.Add(spec);
+            }
+
+            return result;
         }
     }
 }

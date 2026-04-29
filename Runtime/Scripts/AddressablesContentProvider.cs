@@ -18,7 +18,7 @@ namespace DialoguePlus.Unity
     public sealed class AddressablesContentProvider : IContentProvider
     {
         public bool CanHandle(string sourceId)
-            => DialoguePlusSourceId.IsAddressablesSourceId(sourceId);
+            => DialoguePlusAddressablesIds.IsAddressablesSourceId(sourceId);
 
         public Task<bool> ExistsAsync(string sourceId, CancellationToken ct = default)
         {
@@ -38,7 +38,7 @@ namespace DialoguePlus.Unity
                 "AddressablesContentProvider requires com.unity.addressables. Install Addressables or provide another IContentProvider."
             );
 #else
-            var key = DialoguePlusSourceId.KeyFromSourceId(sourceId);
+            var key = DialoguePlusAddressablesIds.KeyFromSourceId(sourceId);
 
             AsyncOperationHandle<DialoguePlusScript> handle;
             try

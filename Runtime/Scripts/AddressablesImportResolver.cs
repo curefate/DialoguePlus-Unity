@@ -28,10 +28,10 @@ namespace DialoguePlus.Unity
             if (Uri.TryCreate(importSpec, UriKind.Absolute, out _))
                 return importSpec;
 
-            var fromKey = DialoguePlusSourceId.KeyFromSourceId(fromSourceId);
-            var baseDir = DialoguePlusPathUtils.GetDirectory(fromKey);
-            var combinedKey = DialoguePlusPathUtils.CombineAndNormalize(baseDir, importSpec);
-            return DialoguePlusSourceId.SourceIdFromKey(combinedKey);
+            var fromKey = DialoguePlusAddressablesIds.KeyFromSourceId(fromSourceId);
+            var baseDir = DialoguePlusAddressablesIds.GetDirectory(fromKey);
+            var combinedKey = DialoguePlusAddressablesIds.CombineAndNormalize(baseDir, importSpec);
+            return DialoguePlusAddressablesIds.SourceIdFromKey(combinedKey);
         }
     }
 }

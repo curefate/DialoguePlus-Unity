@@ -80,7 +80,7 @@ public class DialoguePlusAdapter : MonoBehaviour
         var entrySourceId = !string.IsNullOrWhiteSpace(entry.SourceId)
             ? entry.SourceId
             : (!string.IsNullOrWhiteSpace(entry.Key)
-                ? DialoguePlusSourceId.SourceIdFromKey(entry.Key)
+                ? DialoguePlusAddressablesIds.SourceIdFromKey(entry.Key)
                 : throw new InvalidOperationException(
                     "DialoguePlusScript is missing both SourceId and Key. Ensure it was imported correctly, or call CompileAsync(entrySourceId) instead."
                 ));
