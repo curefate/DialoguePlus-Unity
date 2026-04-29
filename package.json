@@ -1,6 +1,6 @@
 {
   "name": "com.dialogueplus.core",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "displayName": "DialoguePlus",
   "description": "Unity adapter for DialoguePlus Core",
   "unity": "2022.3",
